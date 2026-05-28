@@ -196,6 +196,10 @@ public class MainFrame extends JFrame {
         });
 
         btnSearch.addActionListener(e -> {
+            if (txtSearch.getText().trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Vui lòng nhập từ khoá để tìm kiếm!");
+                return;
+            }
             java.util.List<Student> result = service.search(txtSearch.getText());
             refreshTable(result);
         });
@@ -210,6 +214,8 @@ public class MainFrame extends JFrame {
                                 "\nTên: " + s.getName() +
                                 "\nLớp: " + s.getClassName() +
                                 "\nTuổi: " + s.getAge());
+            }else {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên để xem chi tiết!");
             }
         });
 
