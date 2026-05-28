@@ -1,11 +1,10 @@
 package ui;
 
-import service.StudentService;
-import model.Student;
-
+import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import model.Student;
+import service.StudentService;
 
 public class MainFrame extends JFrame {
 
@@ -51,7 +50,7 @@ public class MainFrame extends JFrame {
         panel.add(form, BorderLayout.NORTH);
 
         // TABLE
-        model = new DefaultTableModel(new String[]{"ID", "Tên", "Lớp", "Tuổi"}, 0);
+        model = new DefaultTableModel(new String[] { "ID", "Tên", "Lớp", "Tuổi" }, 0);
         table = new JTable(model);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
@@ -76,42 +75,129 @@ public class MainFrame extends JFrame {
 
         // ===== EVENT =====
         btnAdd.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            String name = txtName.getText().trim();
+            String className = txtClass.getText().trim();
+            int age;
+            if (id.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Mã sinh viên không được để trống!");
+                return;
+            }
+            if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Tên sinh viên không được để trống!");
+                return;
+            }
+
+           
+
+            if (className.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Lớp không được để trống!");
+                return;
+            }
+
+            if (txtAge.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Tuổi không được để trống!");
+                return;
+            }
+
+            if (!name.matches("[a-zA-ZÀ-ỹ\\s]+")) {
+                JOptionPane.showMessageDialog(this, "Tên chỉ được chứa chữ!");
+                return;
+            }
+
+            if (!className.matches("[a-zA-Z0-9\\s]+")) {
+                JOptionPane.showMessageDialog(this, "Lớp không hợp lệ!");
+                return;
+            }
+
+            try {
+                age = Integer.parseInt(txtAge.getText().trim());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Tuổi phải là số!");
+                return;
+            }
             Student s = new Student(
                     txtId.getText(),
                     txtName.getText(),
                     txtClass.getText(),
-                    Integer.parseInt(txtAge.getText())
-            );
-            service.add(s);
+                    age);
+            boolean added = service.add(s);
+            if (!added) {
+                JOptionPane.showMessageDialog(this, "Mã sinh viên đã tồn tại!");
+                return;
+            }
             refreshTable(service.getAll());
+            clearForm();
         });
 
         btnDelete.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
-                String id = model.getValueAt(row, 0).toString();
-                service.delete(id);
-                refreshTable(service.getAll());
-            }
-        });
 
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên để xoá!");
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Bạn có chắc muốn xoá sinh viên này?",
+                    "Xác nhận",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (confirm != JOptionPane.YES_OPTION)
+                return;
+
+            String id = model.getValueAt(row, 0).toString();
+
+            service.delete(id);
+            refreshTable(service.getAll());
+            clearForm();
+            JOptionPane.showMessageDialog(this, "🗑️ Xoá sinh viên thành công!");
+        });
         btnUpdate.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
-                String id = model.getValueAt(row, 0).toString();
-                Student s = new Student(
-                        id,
-                        txtName.getText(),
-                        txtClass.getText(),
-                        Integer.parseInt(txtAge.getText())
-                );
-                service.update(id, s);
-                refreshTable(service.getAll());
+
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên để sửa!");
+                return;
             }
+
+            String id = model.getValueAt(row, 0).toString();
+            String name = txtName.getText().trim();
+            String className = txtClass.getText().trim();
+
+             if (!name.matches("[a-zA-ZÀ-ỹ\\s]+")) {
+                JOptionPane.showMessageDialog(this, "Tên chỉ được chứa chữ!");
+                return;
+            }
+
+            if (!className.matches("[a-zA-Z0-9\\s]+")) {
+                JOptionPane.showMessageDialog(this, "Lớp không hợp lệ!");
+                return;
+            }
+            int age;
+            try {
+                age = Integer.parseInt(txtAge.getText().trim());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Tuổi phải là số!");
+                return;
+            }
+
+            Student s = new Student(
+                    id,
+                    txtName.getText(),
+                    txtClass.getText(),
+                    age);
+
+            service.update(id, s);
+            refreshTable(service.getAll());
+            clearForm();
+            JOptionPane.showMessageDialog(this, "✅ Cập nhật sinh viên thành công!");
         });
 
         btnSearch.addActionListener(e -> {
-            refreshTable(service.search(txtSearch.getText()));
+            java.util.List<Student> result = service.search(txtSearch.getText());
+            refreshTable(result);
         });
 
         btnDetail.addActionListener(e -> {
@@ -121,10 +207,9 @@ public class MainFrame extends JFrame {
                 Student s = service.findById(id);
                 JOptionPane.showMessageDialog(this,
                         "ID: " + s.getId() +
-                        "\nTên: " + s.getName() +
-                        "\nLớp: " + s.getClassName() +
-                        "\nTuổi: " + s.getAge()
-                );
+                                "\nTên: " + s.getName() +
+                                "\nLớp: " + s.getClassName() +
+                                "\nTuổi: " + s.getAge());
             }
         });
 
@@ -141,10 +226,23 @@ public class MainFrame extends JFrame {
 
     private void refreshTable(java.util.List<Student> list) {
         model.setRowCount(0);
+
+        if (list.isEmpty()) {
+            model.addRow(new Object[] { "", "Không tìm thấy sinh viên", "", "" });
+            return;
+        }
+
         for (Student s : list) {
-            model.addRow(new Object[]{
+            model.addRow(new Object[] {
                     s.getId(), s.getName(), s.getClassName(), s.getAge()
             });
         }
+    }
+
+    private void clearForm() {
+        txtId.setText("");
+        txtName.setText("");
+        txtClass.setText("");
+        txtAge.setText("");
     }
 }

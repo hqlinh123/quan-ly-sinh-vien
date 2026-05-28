@@ -6,10 +6,6 @@ import model.Student;
 public class StudentService {
     private List<Student> list = new ArrayList<>();
 
-    public void add(Student s) {
-        list.add(s);
-    }
-
     public void delete(String id) {
         list.removeIf(s -> s.getId().equals(id));
     }
@@ -34,8 +30,8 @@ public class StudentService {
 
         for (Student s : list) {
             if (s.getId().toLowerCase().contains(keyword) ||
-                s.getName().toLowerCase().contains(keyword) ||
-                s.getClassName().toLowerCase().contains(keyword)) {
+                    s.getName().toLowerCase().contains(keyword) ||
+                    s.getClassName().toLowerCase().contains(keyword)) {
                 result.add(s);
             }
         }
@@ -47,5 +43,17 @@ public class StudentService {
                 .filter(s -> s.getId().equals(id))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public boolean existsById(String id) {
+        return list.stream().anyMatch(s -> s.getId().equalsIgnoreCase(id));
+    }
+
+    public boolean add(Student s) {
+        if (existsById(s.getId())) {
+            return false;
+        }
+        list.add(s);
+        return true;
     }
 }
